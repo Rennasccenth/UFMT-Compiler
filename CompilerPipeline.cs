@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Compiler
 {
@@ -10,14 +6,9 @@ namespace Compiler
     {
         public static void Evaluate(string inputFile, string outputFile)
         {
-            var lexAnalyzer = new LexAnalyzer(inputFile);
+            Syntactic syntactic = new Syntactic(inputFile);
             
-            do
-            {
-                var token = lexAnalyzer.NextToken();
-                if (token is null) break;
-                Console.WriteLine(token.ToString());
-            } while (true);
+            syntactic.Analysis();
         }
     }
 }

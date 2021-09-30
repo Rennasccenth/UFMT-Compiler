@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31612.314
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compiler", "Compiler.csproj", "{3C285FBC-8632-470F-8075-B01A6CDFA114}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{689377F0-A2C7-4E81-ABBC-7A91975DB2AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,5 +23,8 @@ Global
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DBDF47DB-F512-49C1-94D2-67AEFBE1439A}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3C285FBC-8632-470F-8075-B01A6CDFA114} = {689377F0-A2C7-4E81-ABBC-7A91975DB2AA}
 	EndGlobalSection
 EndGlobal

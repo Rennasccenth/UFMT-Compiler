@@ -59,9 +59,5 @@ namespace Compiler.Extensions
         {
             return currentChar is '>' or '<';
         }
-        public static bool IsArithmetic(this char? currentChar)
-        {
-            return currentChar is '+' or '-' or '*' or '/';
-        }
     }
 }

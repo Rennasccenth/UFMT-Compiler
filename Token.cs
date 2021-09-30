@@ -14,7 +14,7 @@ namespace Compiler
 
         public Token(string? tokenValue, TokenType type)
         {
-            TokenValue = tokenValue;
+            TokenValue = tokenValue ?? "NULL";
             Type = type;
         }
 
@@ -26,15 +26,15 @@ namespace Compiler
 
     public enum TokenType
     {
-        INTEGER=1,
-        FLOAT=2,
-        IDENTIFIER=3,
-        OPERATOR=4,
-        KEYWORD=5,
-        ATRIBUITOR=6,
-        TYPEDECLARATION=7,
-        SYMBOL=8,
-        SEMICOLON=9,
-        RELATIONAL=10
+        Integer=1,
+        Float=2,
+        Identifier=3,
+        Operator=4,
+        Keyword=5,
+        Attributor=6,
+        TypeDeclaration=7,
+        Symbol=8,
+        Semicolon=9,
+        Relational=10
     }
 }
