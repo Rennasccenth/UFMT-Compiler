@@ -18,7 +18,7 @@ namespace Compiler
         
         private readonly Dictionary<string , Token> _tokenTable = new();
         
-        private string _generatedCode = new string("operator;arg1;arg2;result\n");
+        private string _generatedCode = new string("operator; argument1; argument2; result\n");
 
         public Syntactic(string fileName)
         {
@@ -54,7 +54,7 @@ namespace Compiler
 
         private void IncrementGeneratedCode(string? operation, string argument1, string argument2, string? result)
         {
-            _generatedCode += $"{operation};{argument1};{argument2};{result}\n";
+            _generatedCode += $"{operation};  {argument1}  ;  {argument2};  {result}\n";
             _currentLine++;
         }
 
@@ -87,8 +87,6 @@ namespace Compiler
         
         private void GetToken()
         {
-            if (_token is not null)
-                Console.WriteLine($"{_token.TokenValue} {ResolveTokenType().ToString()}");
             _token = _lexScanner.NextToken();
         }
         private void BackToken()
@@ -323,7 +321,7 @@ namespace Compiler
         private void Comandos()
         {
             Comando();
-            MaisComandos();
+            MaisComandos(ValidateTokenValue(";"));
         }
         
         /// <summary>
@@ -335,7 +333,6 @@ namespace Compiler
         private void Comando()
         {
             GetToken();
-            Console.WriteLine("Starting Command");
             if (ValidateTokenValue("read"))
             {
                 GetToken();
@@ -344,6 +341,7 @@ namespace Compiler
                     GetToken();
                     if (ValidateTokenType(TokenType.Identifier))
                     {
+                        var bufferIdentifier = _token?.TokenValue;
                         if (VariableAlreadyDeclared(_token) is not true)
                         {
                             throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' wasn't declared before.");
@@ -355,7 +353,7 @@ namespace Compiler
                             throw new SyntacticException($"Syntactic error found, expected ')' but found '{_token?.TokenValue}'.");
                         }
 
-                        IncrementGeneratedCode("read", "", "", _token?.TokenValue);
+                        IncrementGeneratedCode("read", "", "", bufferIdentifier);
                     }
                     else
                     {
@@ -375,6 +373,7 @@ namespace Compiler
                     GetToken();
                     if (ValidateTokenType(TokenType.Identifier))
                     {
+                        var bufferIdentifier = _token?.TokenValue;
                         if (VariableAlreadyDeclared(_token) is not true)
                         {
                             throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' wasn't declared before.");
@@ -386,7 +385,7 @@ namespace Compiler
                             throw new SyntacticException($"Syntactic error found, expected ')' but found '{_token?.TokenValue}'.");
                         }
 
-                        IncrementGeneratedCode("write", "", "", _token?.TokenValue);
+                        IncrementGeneratedCode("write", "", "", bufferIdentifier);
                     }
                     else
                     {
@@ -400,6 +399,7 @@ namespace Compiler
             }
             else if (ValidateTokenType(TokenType.Identifier))
             {
+                var tokenBuffer = _token?.TokenValue; 
                 if (VariableAlreadyDeclared(_token) is not true)
                 {
                     throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' wasn't declared before.");
@@ -409,7 +409,7 @@ namespace Compiler
                 if (ValidateTokenValue(":="))
                 {
                     var expression = Expressao();
-                    IncrementGeneratedCode(":=", expression, "", _token?.TokenValue);
+                    IncrementGeneratedCode(":=", expression, "", tokenBuffer);
                 }
                 else
                 {
@@ -446,13 +446,13 @@ namespace Compiler
         /// <summary>
         ///     ´mais_comandos´ -> ; ´comandos´ | λ 
         /// </summary>
-        private void MaisComandos()
+        private void MaisComandos(bool previouslyGetSemiColon)
         {
-            GetToken();
+            if (!previouslyGetSemiColon)
+                GetToken();
             if (ValidateTokenValue(";"))
             {
                 Comandos();
-                
             }
         }
 
@@ -462,6 +462,7 @@ namespace Compiler
         private string? Expressao()
         {
             var termo = Termo();
+            if (termo is "") return termo;
             var outrosTermos = OutrosTermos(termo);
 
             return outrosTermos;
@@ -472,20 +473,23 @@ namespace Compiler
         {
             if (ValidateTokenValue("+", "-"))
             {
+                
                 var opAdDir = OpAd();
                 GetToken();
+                var bufferVar = _token?.TokenValue;
                 var termoDir = Termo();
+                if (ValidateTokenValue(";")) termoDir = bufferVar;
                 
-                var t = GenerateBuffer();
-                IncrementGeneratedCode(opAdDir, outrosTermosEsq, termoDir, t);
-                termoDir = t;
+
+                var generatedBuffer = GenerateBuffer();
+                IncrementGeneratedCode(opAdDir, outrosTermosEsq, termoDir, generatedBuffer);
+                termoDir = generatedBuffer;
                 
                 return OutrosTermos(termoDir);
             }
-
+            
             return outrosTermosEsq;
         }
-
         
 
         /// <summary>
@@ -549,8 +553,14 @@ namespace Compiler
         /// <exception cref="SyntacticException"></exception>
         private string? Fator(string? fatorEsq)
         {
+            if (fatorEsq == "")
+            {
+                return null;
+            } 
+            
             if (ValidateTokenType(TokenType.Identifier))
             {
+                var identifier = _token?.TokenValue;
                 if (VariableAlreadyDeclared(_token) is false)
                 {
                     throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' wasn't declared before.");
@@ -563,22 +573,22 @@ namespace Compiler
                     throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' have a different type declaration.");
                 }
 
-                if (fatorEsq != "-") return  _token?.TokenValue;
+                if (fatorEsq != "-") return  identifier;
                 
-                var t = GenerateBuffer();
-                IncrementGeneratedCode("minus",  _token.TokenValue!, "", t);
-                return t;
+                var bufferRegister = GenerateBuffer();
+                IncrementGeneratedCode("minus",  identifier, "", bufferRegister);
+                return bufferRegister;
 
             }
             if (ValidateTokenType(TokenType.Integer, TokenType.Float))
             {
-
+    
                 _tokenTable.TryGetValue(_token!.TokenValue!, out var previouslyRegisteredToken);
                 
-                if (_token.Type != previouslyRegisteredToken?.Type)
-                {
-                    throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' have a different type declaration.");
-                }
+                // if (_token.Type != previouslyRegisteredToken?.Type)
+                // {
+                //     throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' have a different type declaration.");
+                // }
 
                 if (fatorEsq != "-") return _token.TokenValue;
                 
@@ -602,31 +612,36 @@ namespace Compiler
                 IncrementGeneratedCode("minus", expressaoDir, "", t);
                 return t;
             }
-
+            
             return "";
         }
 
-        // <mais_fatores> -> <op_mul> <fator> <mais_fatores> | λ  
+         
+        /// <summary>
+        ///     ´mais_fatores´ -> ´op_mul´ ´fator´ ´mais_fatores´ | λ
+        /// </summary>
+        /// <param name="maisFatoresEsq"></param>
         private string? MaisFatores(string? maisFatoresEsq)
         {
-            GetToken();
+            if (maisFatoresEsq != "") GetToken();
+            
             if (ValidateTokenValue("*", "/"))
             {
                 var opMulDir = OpMul();
                 GetToken();
                 var fatorDir = Fator(opMulDir);
 
-                var t = GenerateBuffer();
+                var bufferRegister = GenerateBuffer();
                 if (opMulDir == "*")
                 {
-                    IncrementGeneratedCode("*", maisFatoresEsq, fatorDir, t);
+                    IncrementGeneratedCode("*", maisFatoresEsq, fatorDir, bufferRegister);
                 }
                 else
                 {
-                    IncrementGeneratedCode("/", maisFatoresEsq, fatorDir, t);
+                    IncrementGeneratedCode("/", maisFatoresEsq, fatorDir, bufferRegister);
                 }
 
-                fatorDir = t;
+                fatorDir = bufferRegister;
                 return MaisFatores(fatorDir);
             }
             return maisFatoresEsq;
@@ -651,7 +666,7 @@ namespace Compiler
         private string? OpAd()
         {
             var value = _token?.TokenValue;
-            if (value is null) throw new UnexpectedValueException("Token value cannot be null");
+            if (!ValidateTokenValue("+", "-")) throw new UnexpectedValueException($"Expected '+' or '-' buf found '{_token?.TokenValue}'");
             return value;
         }
         

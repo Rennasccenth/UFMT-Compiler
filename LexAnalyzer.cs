@@ -240,7 +240,7 @@ namespace Compiler
 
         private char? CurrentChar => IsEof() ? null : Input[Position];
 
-        private void GoBack() => Position--;
+        public void GoBack() => Position--;
 
         private void GoNext() => Position++;
         private void ResetState() => CurrentState = State.Initial;
