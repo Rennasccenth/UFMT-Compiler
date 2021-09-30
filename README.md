@@ -8,11 +8,11 @@ With dotnet cli installed, run the command on the root folder of the repository:
 dotnet run
 ``
 
-Lex Machine state:
+### Lex Machine state:
 
 ![alt text](Assets/CompilerStateMachine.png)
 
-Syntactic:
+### Syntactic:
 
 ```
 <programa> -> program ident <corpo> .
