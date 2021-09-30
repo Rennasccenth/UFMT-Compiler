@@ -10,7 +10,7 @@ dotnet run
 
 ### Lex Machine state:
 
-![alt text](Assets/CompilerStateMachine.png)
+![alt text](Assets/UpdatedAutomato.png)
 
 ### Syntactic:
 
