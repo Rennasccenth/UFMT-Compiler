@@ -105,10 +105,25 @@ namespace Compiler
                                 CurrentState = State.MaybeDivisionOrComment;
                                 CurrentBuffer += CurrentChar;
                                 GoNext();
+                            }else if (CurrentChar.IsOpeningCurlyBracket())
+                            {
+                                CurrentState = State.LookingForInlineCommentEnd;
+                                GoNext();
                             }
                             break;
                         }
-
+                    
+                    case State.LookingForInlineCommentEnd:
+                    {
+                        if (CurrentChar.IsClosingCurlyBracket())
+                        {
+                            ResetStateAndBuffer();
+                            GoNext();
+                            break;
+                        }
+                        GoNext();
+                        break;
+                    }
                     case State.ExpectingLetterOrNumber:
                         {
                             if (CurrentChar.IsLetterOrDigit())
@@ -306,6 +321,6 @@ namespace Compiler
         MaybeEqualsFromColon = 7,
         MaybeDivisionOrComment = 8,
         LookingForCommentEnd = 9,
-        CanBeCommentEnd = 10
+        LookingForInlineCommentEnd = 10
     }
 }

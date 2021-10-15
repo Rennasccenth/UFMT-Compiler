@@ -47,6 +47,14 @@ namespace Compiler.Extensions
         {
             return currentChar is '*';
         }
+        public static bool IsOpeningCurlyBracket(this char? currentChar)
+        {
+            return currentChar is '{';
+        }
+        public static bool IsClosingCurlyBracket(this char? currentChar)
+        {
+            return currentChar is '}';
+        }
         public static bool IsBar(this char? currentChar)
         {
             return currentChar is '/';
