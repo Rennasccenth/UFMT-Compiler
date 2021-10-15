@@ -1,6 +1,10 @@
 program teste
 	real: a,b;
 	integer: c, d;
+/* 
+Teste de comentário 
+asdasdasdd *
+*/
 begin 
 	read(a);
 	read(c);

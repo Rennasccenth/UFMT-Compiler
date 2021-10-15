@@ -11,6 +11,7 @@ namespace Compiler
     {
         private State CurrentState { get; set; } 
         private string? CurrentBuffer { get; set; }
+        private string? SecondaryBuffer { get; set; }
         private Token? CurrentToken { get; set; }
         private int Position { get; set; }
 
@@ -26,6 +27,7 @@ namespace Compiler
             "if",
             "then",
             "else",
+            "while"
         };
 
         private string Input { get; }
@@ -96,6 +98,11 @@ namespace Compiler
                             }else if (CurrentChar.IsRelational())
                             {
                                 CurrentState = State.MaybeEqualsFromRelational;
+                                CurrentBuffer += CurrentChar;
+                                GoNext();
+                            }else if (CurrentChar.IsBar())
+                            {
+                                CurrentState = State.MaybeDivisionOrComment;
                                 CurrentBuffer += CurrentChar;
                                 GoNext();
                             }
@@ -213,6 +220,37 @@ namespace Compiler
                         GoNext();
                         return CurrentToken;
                     }
+                    case State.MaybeDivisionOrComment:
+                    {
+                        if (CurrentChar.IsAsterisk())
+                        {
+                            ResetBuffer();
+                            CurrentState = State.LookingForCommentEnd;
+                            GoNext();
+                            break;
+                        }
+                        
+                        // Returns only if it's a operator, therefore, ignore
+                        CurrentToken = new Token(CurrentBuffer, TokenType.Operator);
+                        ResetStateAndBuffer();
+                        TokensAlreadyFound.Add(CurrentToken);
+                        GoNext();
+                        return CurrentToken;
+                    }
+                    case State.LookingForCommentEnd:
+                    {
+                        if (CurrentChar.IsAsterisk())
+                        {
+                            GoNext();
+                            if (CurrentChar.IsBar()) // Find the end of the comment
+                            {
+                                ResetStateAndBuffer();
+                                GoNext();
+                                break;
+                            }
+                        }
+                        GoNext();
+                    }
                         break;
                     
                     default:
@@ -222,7 +260,7 @@ namespace Compiler
 
             return null;
         }
-
+        
         public void BackOneToken()
         {
             var tokenValue = TokensAlreadyFound.LastOrDefault()!.TokenValue;
@@ -266,5 +304,8 @@ namespace Compiler
         ExpectingNumberAfterDot = 5,
         ExpectingOneNumberAfterDot = 6,
         MaybeEqualsFromColon = 7,
+        MaybeDivisionOrComment = 8,
+        LookingForCommentEnd = 9,
+        CanBeCommentEnd = 10
     }
 }

@@ -88,6 +88,10 @@ namespace Compiler
         private void GetToken()
         {
             _token = _lexScanner.NextToken();
+            if (_token is not null)
+            {
+                Console.WriteLine(_token);
+            }
         }
         private void BackToken()
         {

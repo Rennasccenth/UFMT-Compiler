@@ -41,7 +41,15 @@ namespace Compiler.Extensions
             return currentChar is ':';
         }
         public static bool IsMathOperator(this char? currentChar){
-            return currentChar is '+' or '-' or '/' or '*';
+            return currentChar is '+' or '-' or '*';
+        }
+        public static bool IsAsterisk(this char? currentChar)
+        {
+            return currentChar is '*';
+        }
+        public static bool IsBar(this char? currentChar)
+        {
+            return currentChar is '/';
         }
         public static bool IsEqualSymbol(this char? currentChar)
         {
