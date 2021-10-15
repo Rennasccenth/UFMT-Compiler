@@ -468,7 +468,9 @@ namespace Compiler
             return outrosTermos;
         }
 
-        // <outros_termos> -> <op_ad> <termo> <outros_termos> | λ
+        /// <summary>
+        ///     ´outros_termos´ -> ´op_ad´ ´termo´ ´outros_termos´ | λ
+        /// </summary>
         private string? OutrosTermos(string? outrosTermosEsq)
         {
             if (ValidateTokenValue("+", "-"))
