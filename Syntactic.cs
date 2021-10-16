@@ -95,7 +95,7 @@ namespace Compiler
         }
         private void BackToken()
         {
-            _lexScanner.BackOneToken();
+            _lexScanner.UndoToken();
         }
 
         private void RegisterThisToken(TokenType type)
@@ -324,6 +324,7 @@ namespace Compiler
         /// </summary>
         private void Comandos()
         {
+            
             Comando();
             MaisComandos(ValidateTokenValue(";"));
         }
@@ -333,6 +334,7 @@ namespace Compiler
         ///     ´comando´ -> write (IDENTIFIER)
         ///     ´comando´ -> ident := ´expressao´
         ///     ´comando´ -> if ´condicao´ then ´comandos´ ´pfalsa´ $
+        ///     ´comando´ -> while ´condicao´ do ´comandos´ $
         /// </summary>
         private void Comando()
         {
@@ -413,6 +415,7 @@ namespace Compiler
                 if (ValidateTokenValue(":="))
                 {
                     var expression = Expressao();
+                    Console.WriteLine($"Ultimo token da Expressao foi: {_token?.TokenValue}");
                     IncrementGeneratedCode(":=", expression, "", tokenBuffer);
                 }
                 else
@@ -441,9 +444,32 @@ namespace Compiler
                     throw new SyntacticException($"Syntactic error found, expected 'then' but found '{_token?.TokenValue}'.");
                 }
             }
+            else if (ValidateTokenValue("while"))
+            {   
+                var condition = Condicao();
+                if (ValidateTokenValue("do"))
+                {
+                    // IncrementGeneratedCode("JF", condition, "JF_line", "");
+                    Comandos();
+                    // IncrementGeneratedCode("goto", "goto_line", "", "");
+                    // ReplaceLastOccurence("JF_line");
+                    // Pfalsa();
+                    // ReplaceLastOccurence("goto_line");
+                    
+                    if (ValidateTokenValue("$") is not true)
+                    {
+                        Console.WriteLine("HERE");
+                        throw new SyntacticException($"Syntactic error found, expected '$' but found '{_token?.TokenValue}'.");
+                    }
+                }
+                else
+                {
+                    throw new SyntacticException($"Syntactic error found, expected 'do' but found '{_token?.TokenValue}'.");
+                }
+            }
             else
             {
-                throw new SyntacticException($"Syntactic error found, unsupported expression, expected 'read', 'write', 'IDENTIFIER' or 'if' but found '{_token?.TokenValue}' instead.");
+                throw new SyntacticException($"Syntactic error found, unsupported expression, expected 'read', 'write', 'IDENTIFIER', 'if' or 'while' but found '{_token?.TokenValue}' instead.");
             }
         }
         
@@ -452,6 +478,7 @@ namespace Compiler
         /// </summary>
         private void MaisComandos(bool previouslyGetSemiColon)
         {
+            Console.WriteLine($"pEDIU mais comandos COM O ULTIMO TOKEN SENDO {_token?.TokenValue}");
             if (!previouslyGetSemiColon)
                 GetToken();
             if (ValidateTokenValue(";"))
@@ -466,8 +493,10 @@ namespace Compiler
         private string? Expressao()
         {
             var termo = Termo();
+            Console.WriteLine($"Ultimo token de Termo foi: {_token?.TokenValue}");
             if (termo is "") return termo;
             var outrosTermos = OutrosTermos(termo);
+            Console.WriteLine($"Ultimo token de OutrosTermos foi: {_token?.TokenValue}");
 
             return outrosTermos;
         }
@@ -485,7 +514,6 @@ namespace Compiler
                 var bufferVar = _token?.TokenValue;
                 var termoDir = Termo();
                 if (ValidateTokenValue(";")) termoDir = bufferVar;
-                
 
                 var generatedBuffer = GenerateBuffer();
                 IncrementGeneratedCode(opAdDir, outrosTermosEsq, termoDir, generatedBuffer);
@@ -493,7 +521,6 @@ namespace Compiler
                 
                 return OutrosTermos(termoDir);
             }
-            
             return outrosTermosEsq;
         }
         
@@ -660,7 +687,14 @@ namespace Compiler
         /// <returns></returns>
         private string? OpUn()
         {
+            Console.WriteLine($"Entrou em OPUN com {_token?.TokenValue}");
             GetToken();
+            if (ValidateTokenValue("$"))
+            {
+                BackToken();
+                Console.WriteLine($"SAINDO de OPUN com {_token?.TokenValue}");
+                return null;
+            }
             return ValidateTokenValue("-") ? "-" : null;
         }
         

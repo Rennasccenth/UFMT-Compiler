@@ -14,7 +14,9 @@ namespace Compiler
         private string? SecondaryBuffer { get; set; }
         private Token? CurrentToken { get; set; }
         private int Position { get; set; }
-
+        private int LastInitialStatePosition { get; set; }
+        private int InputLength { get; set; }
+        
         private List<string?> Keywords => new()
         {
             "program",
@@ -27,7 +29,8 @@ namespace Compiler
             "if",
             "then",
             "else",
-            "while"
+            "while",
+            "do"
         };
 
         private string Input { get; }
@@ -59,7 +62,8 @@ namespace Compiler
                 switch (CurrentState)
                 {
                     case State.Initial:
-                        {
+                    {
+                        LastInitialStatePosition = Position;
                             if (CurrentChar.IsLetter())
                             {
                                 CurrentState = State.ExpectingLetterOrNumber;
@@ -276,14 +280,9 @@ namespace Compiler
             return null;
         }
         
-        public void BackOneToken()
+        public void UndoToken()
         {
-            var tokenValue = TokensAlreadyFound.LastOrDefault()!.TokenValue;
-            if (tokenValue == null) throw new InvalidOperationException("Unsupported Operation");
-            
-            var lastTokenValueLength = tokenValue.Length;
-
-            Position -= lastTokenValueLength;
+            Position = LastInitialStatePosition;
         }
 
         private bool IsEof()

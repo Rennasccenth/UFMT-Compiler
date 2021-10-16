@@ -5,8 +5,8 @@ program teste
 
 /*  corpo * principal / */
 begin 
-	read(a); {real}
-	read(c); {integer}
+  read(a); {real}
+  read(c); {integer}
   b := a * a + a;
   d := 2*c + c;
   if a > b then
