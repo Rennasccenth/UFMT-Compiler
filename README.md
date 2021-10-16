@@ -33,7 +33,8 @@ dotnet run
 <comando> -> read (ident) |
             write (ident) |
             ident := <expressao> |
-            if <condicao> then <comandos> <pfalsa> $
+            if <condicao> then <comandos> <pfalsa> $ |
+            while <condicao> do <comandos> $
 <condicao> -> <expressao> <relacao> <expressao>
 <relacao> -> = |
             <> |
