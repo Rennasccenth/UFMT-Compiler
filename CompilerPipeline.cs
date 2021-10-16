@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Compiler
 {
@@ -8,7 +9,7 @@ namespace Compiler
         {
             Syntactic syntactic = new Syntactic(inputFile);
             
-            syntactic.Analysis();
+            File.WriteAllLines(outputFile, syntactic.Analysis().ToArray());
         }
     }
 }

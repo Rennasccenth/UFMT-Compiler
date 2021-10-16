@@ -52,16 +52,19 @@ namespace Compiler
         ///     Starts file parsing
         /// </summary>
         /// <exception cref="SyntacticException"> Throw when founds any unexpected token </exception>
-        public void Analysis()
+        public List<string> Analysis()
         {
             GetToken();
             Programa();
             if (_token is null)
             {
+                Console.WriteLine("\n \n GENERATED CODE\n");
                 foreach (var item in CStack)
                 {
                     Console.WriteLine(item);
                 }
+                
+                return CStack;
             }
             else
             {
