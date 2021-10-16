@@ -415,7 +415,6 @@ namespace Compiler
                 if (ValidateTokenValue(":="))
                 {
                     var expression = Expressao();
-                    Console.WriteLine($"Ultimo token da Expressao foi: {_token?.TokenValue}");
                     IncrementGeneratedCode(":=", expression, "", tokenBuffer);
                 }
                 else
@@ -478,7 +477,6 @@ namespace Compiler
         /// </summary>
         private void MaisComandos(bool previouslyGetSemiColon)
         {
-            Console.WriteLine($"pEDIU mais comandos COM O ULTIMO TOKEN SENDO {_token?.TokenValue}");
             if (!previouslyGetSemiColon)
                 GetToken();
             if (ValidateTokenValue(";"))
@@ -493,10 +491,8 @@ namespace Compiler
         private string? Expressao()
         {
             var termo = Termo();
-            Console.WriteLine($"Ultimo token de Termo foi: {_token?.TokenValue}");
             if (termo is "") return termo;
             var outrosTermos = OutrosTermos(termo);
-            Console.WriteLine($"Ultimo token de OutrosTermos foi: {_token?.TokenValue}");
 
             return outrosTermos;
         }
@@ -687,12 +683,10 @@ namespace Compiler
         /// <returns></returns>
         private string? OpUn()
         {
-            Console.WriteLine($"Entrou em OPUN com {_token?.TokenValue}");
             GetToken();
             if (ValidateTokenValue("$"))
             {
                 BackToken();
-                Console.WriteLine($"SAINDO de OPUN com {_token?.TokenValue}");
                 return null;
             }
             return ValidateTokenValue("-") ? "-" : null;
