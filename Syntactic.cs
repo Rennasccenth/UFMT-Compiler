@@ -16,18 +16,37 @@ namespace Compiler
         private int _buffer = 1;
         private int _currentLine;
         
-        private readonly Dictionary<string , Token> _tokenTable = new();
+        private readonly Dictionary<string , Symbol> Symbols = new();
         
         private string _generatedCode = new string("operator; argument1; argument2; result\n");
 
+        private List<string> CStack { get; set; }
+        private int s { get; set; }
+        
         public Syntactic(string fileName)
         {
             _lexScanner = new LexAnalyzer(fileName);
+            CStack = new List<string>();
+            s = -1;
         }
 
         #endregion
 
         #region Auxiliary Functions
+
+        private string PopFromCStack()
+        {
+            var lastItem = CStack.Last();
+            
+            CStack.RemoveAt(CStack.IndexOf(lastItem));
+            
+            return lastItem;
+        }
+        
+        private void PushOnCStack(string item)
+        {
+            CStack.Add(item);
+        }
         
         /// <summary>
         ///     Starts file parsing
@@ -39,7 +58,10 @@ namespace Compiler
             Programa();
             if (_token is null)
             {
-                Console.WriteLine(_generatedCode);
+                foreach (var item in CStack)
+                {
+                    Console.WriteLine(item);
+                }
             }
             else
             {
@@ -62,29 +84,19 @@ namespace Compiler
         {
             var key = variableToken?.TokenValue;
             if (key is null || _token is null) throw new UnexpectedValueException("Cannot verify null value of a token.");
-            return _tokenTable.ContainsKey(key);
+            return Symbols.ContainsKey(key);
         }
 
         private TokenType ResolveTokenType()
         {
             var key = _token?.TokenValue;
             if (key is null || _token is null) throw new UnexpectedValueException("Cannot register null value of a token.");
-            _tokenTable.TryGetValue(key, out var bufferToken);
+            Symbols.TryGetValue(key, out var bufferSymbol);
 
-            var previousDeclaredType = bufferToken?.Type;
+            var previousDeclaredType = bufferSymbol?._token.Type;
             return previousDeclaredType ?? _token.Type;
         }
-        
-        private string GetThisTokenInitialValue()
-        {
-            return _token?.Type switch
-            {
-                TokenType.Float => "0.0",
-                TokenType.Integer => "0",
-                _ => ""
-            };
-        }
-        
+
         private void GetToken()
         {
             _token = _lexScanner.NextToken();
@@ -102,8 +114,11 @@ namespace Compiler
         {
             var key = _token?.TokenValue;
             if (key is null || _token is null) throw new UnexpectedValueException("Cannot register null value of a token.");
+
+            s++;
             var bufferToken = new Token(key, type);
-            _tokenTable.Add(key, bufferToken);
+            var symbol = new Symbol(bufferToken, s);
+            Symbols.Add(key, symbol);
         }
 
         /// <summary>
@@ -176,14 +191,14 @@ namespace Compiler
                 GetToken();
                 if (ValidateTokenType(TokenType.Identifier))
                 {
+                    PushOnCStack("INPP");
                     Corpo();
                     GetToken();
                     
                     if (ValidateTokenValue(".") is false)
                         throw new SyntacticException($"Syntactic error found, expected '.' but found {_token}.");
                     
-                    IncrementGeneratedCode("PARA", "", "", "");
-                    
+                    PushOnCStack("PARA");
                     GetToken();
                     if (_token is not null) 
                         throw new SyntacticException($"Syntactic error found, this language doesn't support any instructions after the end of 'program' scope.");
@@ -284,7 +299,7 @@ namespace Compiler
                 }
                 
                 RegisterThisToken(variablesType);
-                IncrementGeneratedCode("ALME", GetThisTokenInitialValue(), "", _token?.TokenValue ?? "");
+                PushOnCStack("ALME 1");
                 MaisVar(variablesType);
             }
             else
@@ -359,7 +374,10 @@ namespace Compiler
                             throw new SyntacticException($"Syntactic error found, expected ')' but found '{_token?.TokenValue}'.");
                         }
 
-                        IncrementGeneratedCode("read", "", "", bufferIdentifier);
+                        s++;
+                        PushOnCStack("LEIT");
+                        PushOnCStack($"ARMZ {Symbols[bufferIdentifier]._relativePosition}");
+                        
                     }
                     else
                     {
@@ -390,8 +408,10 @@ namespace Compiler
                         {
                             throw new SyntacticException($"Syntactic error found, expected ')' but found '{_token?.TokenValue}'.");
                         }
-
-                        IncrementGeneratedCode("write", "", "", bufferIdentifier);
+                        
+                        s++;
+                        PushOnCStack("IMPR");
+                        PushOnCStack($"CRVL {Symbols[bufferIdentifier]._relativePosition}");
                     }
                     else
                     {
@@ -414,8 +434,8 @@ namespace Compiler
                 GetToken();
                 if (ValidateTokenValue(":="))
                 {
-                    var expression = Expressao();
-                    IncrementGeneratedCode(":=", expression, "", tokenBuffer);
+                    Expressao();
+                    PushOnCStack($"ARMZ {Symbols[tokenBuffer]._relativePosition}");
                 }
                 else
                 {
@@ -427,12 +447,27 @@ namespace Compiler
                 var condition = Condicao();
                 if (ValidateTokenValue("then"))
                 {
-                    IncrementGeneratedCode("JF", condition, "JF_line", "");
+                    var TempDSVFPosition = CStack.Count;
+                    PushOnCStack("DSVF TempDSVF");
+                    
                     Comandos();
-                    IncrementGeneratedCode("goto", "goto_line", "", "");
-                    ReplaceLastOccurence("JF_line");
+                    
+                    var TempDSVIPosition = CStack.Count;
+                    PushOnCStack("DSVI TempDSVI");
+                    var lineOfElse = CStack.Count;
                     Pfalsa();
-                    ReplaceLastOccurence("goto_line");
+
+                    if (CStack.Count == lineOfElse)
+                    {
+                        PopFromCStack();
+                        CStack[TempDSVFPosition] = CStack[TempDSVFPosition].Replace("TempDSVF", CStack.Count.ToString());
+                    }
+                    else
+                    {
+                        CStack[TempDSVFPosition] = CStack[TempDSVFPosition].Replace("TempDSVF", lineOfElse.ToString());
+                        CStack[TempDSVIPosition] = CStack[TempDSVIPosition].Replace("TempDSVI", CStack.Count.ToString());
+                    }
+                    
                     if (ValidateTokenValue("$") is not true)
                     {
                         throw new SyntacticException($"Syntactic error found, expected '$' but found '{_token?.TokenValue}'.");
@@ -444,20 +479,25 @@ namespace Compiler
                 }
             }
             else if (ValidateTokenValue("while"))
-            {   
-                var condition = Condicao();
+            {
+                var condLineTemp = CStack.Count;
+                
+                Condicao();
+                
+                var DSVFTempLine = CStack.Count;
+                PushOnCStack("DSVF DSVFTempLine");
+                
                 if (ValidateTokenValue("do"))
                 {
-                    // IncrementGeneratedCode("JF", condition, "JF_line", "");
+                    
                     Comandos();
-                    // IncrementGeneratedCode("goto", "goto_line", "", "");
-                    // ReplaceLastOccurence("JF_line");
-                    // Pfalsa();
-                    // ReplaceLastOccurence("goto_line");
+                    
+                    PushOnCStack($"DSVF {condLineTemp.ToString()}");
+
+                    CStack[DSVFTempLine] = CStack[DSVFTempLine].Replace("DSVFTempLine", CStack.Count.ToString()); 
                     
                     if (ValidateTokenValue("$") is not true)
                     {
-                        Console.WriteLine("HERE");
                         throw new SyntacticException($"Syntactic error found, expected '$' but found '{_token?.TokenValue}'.");
                     }
                 }
@@ -504,17 +544,17 @@ namespace Compiler
         {
             if (ValidateTokenValue("+", "-"))
             {
-                
                 var opAdDir = OpAd();
                 GetToken();
                 var bufferVar = _token?.TokenValue;
                 var termoDir = Termo();
+                if (opAdDir == "+")
+                    PushOnCStack("SOMA");
+                else
+                    PushOnCStack("SUBT");
+                
                 if (ValidateTokenValue(";")) termoDir = bufferVar;
 
-                var generatedBuffer = GenerateBuffer();
-                IncrementGeneratedCode(opAdDir, outrosTermosEsq, termoDir, generatedBuffer);
-                termoDir = generatedBuffer;
-                
                 return OutrosTermos(termoDir);
             }
             return outrosTermosEsq;
@@ -532,9 +572,30 @@ namespace Compiler
             var expressaoDir = Expressao();
             var relacaoDir = Relacao();
             var expressaoLinhaDir = Expressao();
-            var t = GenerateBuffer();
-            IncrementGeneratedCode(relacaoDir, expressaoDir, expressaoLinhaDir, t);
-            return t;
+
+            switch (relacaoDir)
+            {
+                case "<=":
+                    PushOnCStack("CPMI");
+                    break;
+                case "=":
+                    PushOnCStack("CPIG");
+                    break;
+                case ">=":
+                    PushOnCStack("CMAI");
+                    break;
+                case "<>":
+                    PushOnCStack("CDES");
+                    break;
+                case "<":
+                    PushOnCStack("CPME");
+                    break;
+                case ">":
+                    PushOnCStack("CPMA");
+                    break;
+            }
+            
+            return string.Empty;
         }
 
         /// <summary>
@@ -595,36 +656,35 @@ namespace Compiler
                     throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' wasn't declared before.");
                 }
 
-                _tokenTable.TryGetValue(_token!.TokenValue!, out var previouslyRegisteredToken);
+                Symbols.TryGetValue(_token!.TokenValue!, out var previouslyRegisteredSymbol);
                 
-                if (ResolveTokenType() != previouslyRegisteredToken?.Type)
+                if (ResolveTokenType() != previouslyRegisteredSymbol?._token.Type)
                 {
                     throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' have a different type declaration.");
                 }
 
+                PushOnCStack($"CRVL {Symbols[identifier!]._relativePosition}");
+                
                 if (fatorEsq != "-") return  identifier;
                 
                 var bufferRegister = GenerateBuffer();
-                IncrementGeneratedCode("minus",  identifier, "", bufferRegister);
+                PushOnCStack($"INVE");
                 return bufferRegister;
 
             }
             if (ValidateTokenType(TokenType.Integer, TokenType.Float))
             {
     
-                _tokenTable.TryGetValue(_token!.TokenValue!, out var previouslyRegisteredToken);
+                Symbols.TryGetValue(_token!.TokenValue!, out var previouslyRegisteredToken);
                 
-                // if (_token.Type != previouslyRegisteredToken?.Type)
-                // {
-                //     throw new SyntacticException($"Syntactic error found, variable '{_token?.TokenValue}' have a different type declaration.");
-                // }
-
+                PushOnCStack($"CRCT {_token!.TokenValue}");
+                
                 if (fatorEsq != "-") return _token.TokenValue;
                 
-                var t = GenerateBuffer();
-                IncrementGeneratedCode("minus", _token.TokenValue!, "", t);
-                return t;
+                PushOnCStack($"INVE");
 
+                var t = GenerateBuffer();
+                return t;
             }
             if (ValidateTokenValue("("))
             {
@@ -638,7 +698,7 @@ namespace Compiler
 
                 if (fatorEsq != "-") return expressaoDir;
                 var t = GenerateBuffer();
-                IncrementGeneratedCode("minus", expressaoDir, "", t);
+                PushOnCStack($"INVE");
                 return t;
             }
             
@@ -663,11 +723,11 @@ namespace Compiler
                 var bufferRegister = GenerateBuffer();
                 if (opMulDir == "*")
                 {
-                    IncrementGeneratedCode("*", maisFatoresEsq, fatorDir, bufferRegister);
+                    PushOnCStack("MULT");
                 }
                 else
                 {
-                    IncrementGeneratedCode("/", maisFatoresEsq, fatorDir, bufferRegister);
+                    PushOnCStack("DIVI");
                 }
 
                 fatorDir = bufferRegister;
@@ -713,6 +773,18 @@ namespace Compiler
             if (ValidateTokenValue("*", "/"))
                 return _token?.TokenValue;
             throw new SyntacticException($"Syntactic error, expected '*' or '/' operators but found '{_token?.TokenValue}'");
+        }
+
+        private class Symbol
+        {
+            public Token _token { get; set; }
+            public int _relativePosition { get; set; }
+
+            public Symbol(Token token, int relativePosition)
+            {
+                _token = token;
+                _relativePosition = relativePosition;
+            }
         }
     }
 }
